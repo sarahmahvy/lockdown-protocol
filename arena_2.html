@@ -9,27 +9,22 @@
         body { margin: 0; overflow: hidden; background-color: #0f172a; color: white; font-family: 'Inter', sans-serif; user-select: none; }
         canvas { display: block; image-rendering: pixelated; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
         .glowing-text { text-shadow: 0 0 10px currentColor; }
-        
-        /* Custom UI overlays */
         #ui-layer { pointer-events: none; }
         .pointer-events-auto { pointer-events: auto; }
-        
-        /* Cooldown Bar Animation */
         .cooldown-bar { transition: width 0.1s linear; }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col items-center justify-center relative py-4">
-
-    <!-- Background Decoration -->
     <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black -z-10"></div>
+    
+    <div id="transitionOverlay2" class="hidden absolute inset-0 bg-slate-950 flex-col items-center justify-center z-[100] text-center">
+        <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]">
+            LEVEL 3 ARENA:<br>REACTOR CORE
+        </h1>
+    </div>
 
-    <!-- Game Container -->
     <div id="game-container" class="relative flex flex-col items-center gap-4 w-full max-w-[800px]">
-        
-        <!-- HUD Above Canvas -->
         <div id="hud" class="hidden w-full flex-row justify-between items-start gap-4 p-5 bg-slate-900/80 backdrop-blur border border-slate-700 rounded-xl shadow-lg z-10 transition-all">
-            
-            <!-- Runner Info -->
             <div id="runner-hud" class="w-64">
                 <h3 class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Runner</h3>
                 <div id="runner-name" class="font-bold text-lg text-red-500 glowing-text">Player 1 (Red)</div>
@@ -40,13 +35,11 @@
                 <div class="mt-1 text-yellow-400 text-sm font-bold">Coins: <span id="coin-count">0</span></div>
             </div>
 
-            <!-- Round Timer -->
             <div class="px-6 py-2 text-center bg-slate-800/50 rounded-lg border border-slate-700 shadow-inner min-w-[160px]">
                 <div class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Time Remaining</div>
                 <div id="timer-display" class="text-4xl font-mono font-bold text-white">60.0</div>
             </div>
 
-            <!-- Manipulator Info -->
             <div id="manipulator-hud" class="w-64 text-right">
                 <h3 class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Manipulator</h3>
                 <div id="manip-name" class="font-bold text-lg text-blue-500 glowing-text">Player 2 (Blue)</div>
@@ -67,14 +60,10 @@
 
         <canvas id="gameCanvas" width="600" height="600" class="rounded-lg bg-slate-950 border border-slate-700 shadow-2xl z-0"></canvas>
         
-        <!-- Menus / Overlays -->
         <div id="menu-overlay" class="absolute inset-0 -mx-4 -my-4 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl border border-slate-700 p-8 text-center pointer-events-auto z-20">
-            
-            <!-- Main Menu -->
             <div id="screen-main">
                 <h1 class="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-cyan-500 drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]">SHIFTING MAZE</h1>
                 <h2 class="text-xl text-slate-300 mb-8 font-light tracking-widest">ARENA 2 PROTOTYPE</h2>
-                
                 <div class="flex gap-8 mb-8 text-left bg-slate-900/50 p-6 rounded-xl border border-slate-700">
                     <div class="flex-1">
                         <h3 class="text-red-400 font-bold text-lg mb-2">🔴 The Runner</h3>
@@ -96,49 +85,39 @@
                         </ul>
                     </div>
                 </div>
-
                 <div class="text-sm text-slate-400 mb-8 max-w-md mx-auto">
                     Two rounds, 60 seconds each. Roles swap after Round 1. Fastest time wins. If no one reaches the door, closest distance wins!
                 </div>
-
                 <button onclick="startGame()" class="px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg shadow-[0_0_15px_#16a34a] hover:shadow-[0_0_25px_#22c55e] transition-all transform hover:scale-105 active:scale-95 text-xl">
                     START MATCH
                 </button>
             </div>
 
-            <!-- Intermission -->
             <div id="screen-intermission" class="hidden w-full max-w-lg">
                 <h2 class="text-3xl font-black mb-6 text-white">ROUND 1 COMPLETE</h2>
-                
                 <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 mb-8 text-left">
                     <h3 class="text-red-400 font-bold text-xl mb-4 border-b border-slate-700 pb-2">Player 1 (Red) Results</h3>
                     <div class="grid grid-cols-2 gap-4 text-lg">
                         <div class="text-slate-400">Status:</div>
                         <div id="p1-res-status" class="font-bold text-white">Reached Door</div>
-                        
                         <div class="text-slate-400">Time:</div>
                         <div id="p1-res-time" class="font-bold text-white">45.2s</div>
-                        
                         <div class="text-slate-400">Distance from door:</div>
                         <div id="p1-res-dist" class="font-bold text-white">0 tiles</div>
                     </div>
                 </div>
-
                 <h3 class="text-xl font-bold text-yellow-400 mb-2">Roles Swapping...</h3>
                 <p class="text-slate-300 mb-8">Player 2 (Blue) is now the Runner. Player 1 (Red) is the Manipulator.</p>
-
                 <button onclick="startRound2()" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-[0_0_15px_#2563eb] hover:shadow-[0_0_25px_#3b82f6] transition-all transform hover:scale-105 active:scale-95 text-xl w-full">
                     START ROUND 2
                 </button>
             </div>
 
-            <!-- Game Over -->
             <div id="screen-gameover" class="hidden w-full max-w-xl">
                 <h1 class="text-5xl font-black mb-2 text-white">MATCH OVER</h1>
                 <h2 id="winner-text" class="text-3xl font-bold mb-8 glowing-text text-yellow-400">PLAYER 1 WINS!</h2>
                 
                 <div class="grid grid-cols-2 gap-6 mb-8 text-left">
-                    <!-- P1 Stats -->
                     <div class="bg-slate-900 border border-red-900/50 rounded-xl p-5 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
                         <h3 class="text-red-400 font-bold text-xl mb-3 border-b border-slate-700 pb-2">Player 1 (Red)</h3>
                         <div class="space-y-2 text-sm">
@@ -147,8 +126,6 @@
                             <div class="flex justify-between"><span class="text-slate-400">Distance:</span> <span id="go-p1-dist" class="font-bold">0</span></div>
                         </div>
                     </div>
-                    
-                    <!-- P2 Stats -->
                     <div class="bg-slate-900 border border-blue-900/50 rounded-xl p-5 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                         <h3 class="text-blue-400 font-bold text-xl mb-3 border-b border-slate-700 pb-2">Player 2 (Blue)</h3>
                         <div class="space-y-2 text-sm">
@@ -160,17 +137,12 @@
                 </div>
 
                 <p id="win-reason" class="text-slate-300 italic mb-8">Player 1 reached the door, while Player 2 did not.</p>
-
-                <button onclick="resetToMainMenu()" class="px-8 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors">
-                    PLAY AGAIN
-                </button>
+                <p class="text-slate-400 mt-4 text-xl font-bold animate-pulse">Calculating Tournament Standings & Proceeding...</p>
             </div>
-
         </div>
     </div>
 
     <script>
-        /** Game Constants & Configuration */
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const GRID_SIZE = 20;
@@ -179,54 +151,35 @@
         const ROUND_TIME = 60.0;
         const COOLDOWN_TIME = 6.0;
         const POWERUP_DURATION = 5.0;
-        
-        const BASE_SPEED = 4; // tiles per second
-        const PLAYER_RADIUS = 0.35 * TILE_SIZE; // hitbox slightly smaller than a tile half
-        
-        // Tile types
+        const BASE_SPEED = 4;
+        const PLAYER_RADIUS = 0.35 * TILE_SIZE; 
         const EMPTY = 0;
         const WALL = 1;
         const DOOR = 2;
 
-        /** Game State */
         let grid = [];
-        let collectibles = []; // {x, y, type: 'coin'|'powerup', active: boolean}
-        
-        let gameState = 'MENU'; // MENU, PLAYING, INTERMISSION, GAMEOVER
-        let currentRound = 1; // 1 or 2
-        
+        let collectibles = []; 
+        let gameState = 'MENU';
+        let currentRound = 1;
         let timer = ROUND_TIME;
         let manipCooldown = 0;
         let runnerPowerupTime = 0;
         
-        // Runner Object (Coordinates are in Tile units for easy logic, drawn by multiplying by TILE_SIZE)
-        let runner = {
-            x: 0.5,
-            y: 0.5,
-            vx: 0,
-            vy: 0,
-            coins: 0
-        };
+        let runner = { x: 0.5, y: 0.5, vx: 0, vy: 0, coins: 0 };
 
-        // Stats tracking
         let stats = {
             p1: { finished: false, time: 60, dist: 0, coins: 0 },
             p2: { finished: false, time: 60, dist: 0, coins: 0 }
         };
 
-        // Input tracking
         const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
         let mousePos = { x: 0, y: 0 };
         let hoveredTile = { x: -1, y: -1 };
 
-        /** Initialize a random maze layout that is guaranteed to have paths */
         function generateMaze() {
             grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(WALL));
-            
-            // Recursive backtracker
             const stack = [{x: 0, y: 0}];
             grid[0][0] = EMPTY;
-            
             const dirs = [
                 {dx: 0, dy: -2}, {dx: 2, dy: 0},
                 {dx: 0, dy: 2}, {dx: -2, dy: 0}
@@ -235,7 +188,6 @@
             while (stack.length > 0) {
                 const current = stack[stack.length - 1];
                 const unvisited = [];
-                
                 for (let d of dirs) {
                     const nx = current.x + d.dx;
                     const ny = current.y + d.dy;
@@ -243,7 +195,6 @@
                         unvisited.push({x: nx, y: ny, pdx: d.dx/2, pdy: d.dy/2});
                     }
                 }
-
                 if (unvisited.length > 0) {
                     const next = unvisited[Math.floor(Math.random() * unvisited.length)];
                     grid[current.y + next.pdy][current.x + next.pdx] = EMPTY;
@@ -254,20 +205,17 @@
                 }
             }
 
-            // Knock down some extra walls to create loops (so manipulator can't block the ONLY path easily)
             for(let i=0; i < (GRID_SIZE*GRID_SIZE)*0.1; i++) {
                 let rx = Math.floor(Math.random() * (GRID_SIZE-2)) + 1;
                 let ry = Math.floor(Math.random() * (GRID_SIZE-2)) + 1;
                 grid[ry][rx] = EMPTY;
             }
 
-            // Ensure start and end areas are clear
             grid[0][0] = EMPTY; grid[0][1] = EMPTY; grid[1][0] = EMPTY;
             grid[GRID_SIZE-1][GRID_SIZE-1] = DOOR;
             grid[GRID_SIZE-1][GRID_SIZE-2] = EMPTY;
             grid[GRID_SIZE-2][GRID_SIZE-1] = EMPTY;
 
-            // Spawn Items
             collectibles = [];
             spawnItems('coin', 10);
             spawnItems('powerup', 3);
@@ -278,9 +226,7 @@
             while(spawned < count) {
                 let x = Math.floor(Math.random() * GRID_SIZE);
                 let y = Math.floor(Math.random() * GRID_SIZE);
-                // Don't spawn on walls, start, or door
                 if(grid[y][x] === EMPTY && (x > 2 || y > 2) && (x < GRID_SIZE-2 || y < GRID_SIZE-2)) {
-                    // Check if occupied
                     let occ = collectibles.find(c => c.x === x && c.y === y);
                     if(!occ) {
                         collectibles.push({x, y, type, active: true});
@@ -290,14 +236,12 @@
             }
         }
 
-        /** Game Flow Functions */
         function startGame() {
             currentRound = 1;
             document.getElementById('screen-main').classList.add('hidden');
             document.getElementById('menu-overlay').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
             document.getElementById('hud').classList.add('flex');
-            
             initRound();
         }
 
@@ -305,7 +249,6 @@
             currentRound = 2;
             document.getElementById('screen-intermission').classList.add('hidden');
             document.getElementById('menu-overlay').classList.add('hidden');
-            
             initRound();
         }
 
@@ -317,7 +260,6 @@
             timer = ROUND_TIME;
             manipCooldown = 0;
             runnerPowerupTime = 0;
-            
             updateHUDColors();
             gameState = 'PLAYING';
         }
@@ -325,7 +267,6 @@
         function updateHUDColors() {
             const runnerEl = document.getElementById('runner-name');
             const manipEl = document.getElementById('manip-name');
-            
             if(currentRound === 1) {
                 runnerEl.innerText = "Player 1 (Red)";
                 runnerEl.className = "font-bold text-lg text-red-500 glowing-text";
@@ -341,24 +282,19 @@
 
         function endRound(reachedDoor) {
             gameState = 'PAUSED';
-            
-            // Calculate manhattan distance to door (19.5, 19.5 center)
             let dist = Math.abs(runner.x - (GRID_SIZE - 0.5)) + Math.abs(runner.y - (GRID_SIZE - 0.5));
             let finalTime = ROUND_TIME - timer;
-            
             if (currentRound === 1) {
                 stats.p1.finished = reachedDoor;
                 stats.p1.time = reachedDoor ? finalTime : ROUND_TIME;
                 stats.p1.dist = reachedDoor ? 0 : dist.toFixed(1);
                 stats.p1.coins = runner.coins;
-                
                 showIntermission();
             } else {
                 stats.p2.finished = reachedDoor;
                 stats.p2.time = reachedDoor ? finalTime : ROUND_TIME;
                 stats.p2.dist = reachedDoor ? 0 : dist.toFixed(1);
                 stats.p2.coins = runner.coins;
-                
                 showGameOver();
             }
         }
@@ -366,7 +302,6 @@
         function showIntermission() {
             document.getElementById('menu-overlay').classList.remove('hidden');
             document.getElementById('screen-intermission').classList.remove('hidden');
-            
             document.getElementById('p1-res-status').innerText = stats.p1.finished ? "Reached Door" : "Ran out of time";
             document.getElementById('p1-res-status').className = stats.p1.finished ? "font-bold text-green-400" : "font-bold text-red-400";
             document.getElementById('p1-res-time').innerText = stats.p1.time.toFixed(1) + "s";
@@ -379,8 +314,7 @@
             document.getElementById('hud').classList.add('hidden');
             document.getElementById('hud').classList.remove('flex');
             
-            // Determine Winner
-            let winner = 0; // 1 = p1, 2 = p2, 0 = tie
+            let winner = 0; 
             let reason = "";
 
             if (stats.p1.finished && stats.p2.finished) {
@@ -392,13 +326,11 @@
             } else if (!stats.p1.finished && stats.p2.finished) {
                 winner = 2; reason = "Player 2 reached the door, Player 1 did not.";
             } else {
-                // Neither finished. Check distance.
                 if (parseFloat(stats.p1.dist) < parseFloat(stats.p2.dist)) {
                     winner = 1; reason = "Player 1 got closer to the door.";
                 } else if (parseFloat(stats.p2.dist) < parseFloat(stats.p1.dist)) {
                     winner = 2; reason = "Player 2 got closer to the door.";
                 } else {
-                    // Distance tie, check coins
                     if(stats.p1.coins > stats.p2.coins) { winner = 1; reason = "Distance tie broken by Coins (P1 collected more)."; }
                     else if(stats.p2.coins > stats.p1.coins) { winner = 2; reason = "Distance tie broken by Coins (P2 collected more)."; }
                     else { reason = "Perfect tie! Same distance and coins."; }
@@ -418,27 +350,32 @@
             }
             document.getElementById('win-reason').innerText = reason;
 
-            // Populate P1 stats
             document.getElementById('go-p1-status').innerText = stats.p1.finished ? "Finished" : "Time Up";
             document.getElementById('go-p1-time').innerText = stats.p1.time.toFixed(1) + "s";
             document.getElementById('go-p1-dist').innerText = stats.p1.dist;
             
-            // Populate P2 stats
             document.getElementById('go-p2-status').innerText = stats.p2.finished ? "Finished" : "Time Up";
             document.getElementById('go-p2-time').innerText = stats.p2.time.toFixed(1) + "s";
             document.getElementById('go-p2-dist').innerText = stats.p2.dist;
+
+            // Tournament link transition
+            const urlParams = new URLSearchParams(window.location.search);
+            let p1Score = parseInt(urlParams.get('p1') || '0');
+            let p2Score = parseInt(urlParams.get('p2') || '0');
+
+            if (winner === 1) p1Score++;
+            if (winner === 2) p2Score++;
+
+            setTimeout(() => {
+                document.getElementById('screen-gameover').classList.add('hidden');
+                document.getElementById('transitionOverlay2').classList.remove('hidden');
+                document.getElementById('transitionOverlay2').classList.add('flex');
+                setTimeout(() => {
+                    window.location.href = `arena_3.html?p1=${p1Score}&p2=${p2Score}`;
+                }, 3000);
+            }, 4500);
         }
 
-        function resetToMainMenu() {
-            document.getElementById('screen-gameover').classList.add('hidden');
-            document.getElementById('screen-main').classList.remove('hidden');
-            gameState = 'MENU';
-            
-            // Reset background drawing
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-        }
-
-        /** Input Handling */
         window.addEventListener('keydown', (e) => {
             if(keys.hasOwnProperty(e.key)) keys[e.key] = true;
         });
@@ -446,15 +383,12 @@
             if(keys.hasOwnProperty(e.key)) keys[e.key] = false;
         });
 
-        // Mouse for Manipulator
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
-            // Scale mouse pos if canvas CSS size differs from intrinsic size
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
             mousePos.x = (e.clientX - rect.left) * scaleX;
             mousePos.y = (e.clientY - rect.top) * scaleY;
-            
             hoveredTile.x = Math.floor(mousePos.x / TILE_SIZE);
             hoveredTile.y = Math.floor(mousePos.y / TILE_SIZE);
         });
@@ -466,18 +400,16 @@
 
         canvas.addEventListener('mousedown', (e) => {
             if(gameState !== 'PLAYING') return;
-            if(manipCooldown > 0) return; // on cooldown
+            if(manipCooldown > 0) return; 
             
             const tx = hoveredTile.x;
             const ty = hoveredTile.y;
             
             if(tx >= 0 && tx < GRID_SIZE && ty >= 0 && ty < GRID_SIZE) {
-                // Cannot modify start(0,0), (0,1), (1,0) or door(19,19)
                 if((tx===0&&ty===0) || (tx===1&&ty===0) || (tx===0&&ty===1) || (tx===GRID_SIZE-1&&ty===GRID_SIZE-1)) return;
                 
                 let tile = grid[ty][tx];
                 if(tile === EMPTY) {
-                    // Try placing a wall. Prevent if player is currently overlapping this tile.
                     let playerRect = {
                         left: runner.x - (PLAYER_RADIUS/TILE_SIZE),
                         right: runner.x + (PLAYER_RADIUS/TILE_SIZE),
@@ -486,7 +418,7 @@
                     };
                     if(playerRect.left < tx + 1 && playerRect.right > tx &&
                        playerRect.top < ty + 1 && playerRect.bottom > ty) {
-                        return; // blocked by player
+                        return; 
                     }
                     grid[ty][tx] = WALL;
                     triggerCooldown();
@@ -499,8 +431,6 @@
 
         function triggerCooldown() {
             manipCooldown = COOLDOWN_TIME;
-            
-            // Visual feedback on HUD
             const bar = document.getElementById('cooldown-bar');
             const text = document.getElementById('cooldown-text');
             bar.classList.remove('bg-green-500', 'shadow-[0_0_8px_#22c55e]');
@@ -509,37 +439,27 @@
             text.className = "text-red-400 font-bold";
         }
 
-        /** Update Logic */
         let lastTime = 0;
         function gameLoop(timestamp) {
             let dt = (timestamp - lastTime) / 1000;
-            if(dt > 0.1) dt = 0.1; // cap dt for lag spikes
+            if(dt > 0.1) dt = 0.1;
             lastTime = timestamp;
 
             if(gameState === 'PLAYING') {
                 update(dt);
             }
-            
             draw();
             requestAnimationFrame(gameLoop);
         }
 
         function isWall(tx, ty) {
-            if(tx < 0 || tx >= GRID_SIZE || ty < 0 || ty >= GRID_SIZE) return true; // Bounds are walls
+            if(tx < 0 || tx >= GRID_SIZE || ty < 0 || ty >= GRID_SIZE) return true;
             return grid[ty][tx] === WALL;
         }
 
-        // AABB Circle-Rect collision logic adapter
         function checkCollision(newX, newY) {
             const rad = PLAYER_RADIUS / TILE_SIZE;
-            const hitBox = {
-                left: newX - rad,
-                right: newX + rad,
-                top: newY - rad,
-                bottom: newY + rad
-            };
-
-            // Check adjacent tiles
+            const hitBox = { left: newX - rad, right: newX + rad, top: newY - rad, bottom: newY + rad };
             let minTx = Math.floor(hitBox.left);
             let maxTx = Math.floor(hitBox.right);
             let minTy = Math.floor(hitBox.top);
@@ -554,7 +474,6 @@
         }
 
         function update(dt) {
-            // Update Timers
             timer -= dt;
             if (timer <= 0) {
                 timer = 0;
@@ -589,7 +508,6 @@
             document.getElementById('timer-display').innerText = timer.toFixed(1);
             document.getElementById('coin-count').innerText = runner.coins;
 
-            // Runner Movement
             let speed = BASE_SPEED * (runnerPowerupTime > 0 ? 2 : 1);
             let dx = 0;
             let dy = 0;
@@ -599,7 +517,6 @@
             if(keys.a || keys.ArrowLeft) dx -= 1;
             if(keys.d || keys.ArrowRight) dx += 1;
 
-            // Normalize diagonal movement
             if (dx !== 0 && dy !== 0) {
                 const len = Math.sqrt(dx*dx + dy*dy);
                 dx /= len;
@@ -609,15 +526,9 @@
             let vx = dx * speed * dt;
             let vy = dy * speed * dt;
 
-            // Collision sliding
-            if(vx !== 0 && !checkCollision(runner.x + vx, runner.y)) {
-                runner.x += vx;
-            }
-            if(vy !== 0 && !checkCollision(runner.x, runner.y + vy)) {
-                runner.y += vy;
-            }
+            if(vx !== 0 && !checkCollision(runner.x + vx, runner.y)) runner.x += vx;
+            if(vy !== 0 && !checkCollision(runner.x, runner.y + vy)) runner.y += vy;
 
-            // Check Collectibles
             let tx = Math.floor(runner.x);
             let ty = Math.floor(runner.y);
             
@@ -633,56 +544,36 @@
                 }
             }
 
-            // Check Door
-            if(grid[ty][tx] === DOOR) {
-                endRound(true);
-            }
+            if(grid[ty][tx] === DOOR) endRound(true);
         }
 
-        /** Rendering */
         function draw() {
             if(gameState === 'MENU') return;
-            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Grid
             for (let y = 0; y < GRID_SIZE; y++) {
                 for (let x = 0; x < GRID_SIZE; x++) {
                     const tile = grid[y][x];
-                    
                     if (tile === WALL) {
-                        ctx.fillStyle = '#166534'; // Dark green base
+                        ctx.fillStyle = '#166534';
                         ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                        
-                        // Hedge texture effect
-                        ctx.fillStyle = '#15803d'; // Lighter green top
+                        ctx.fillStyle = '#15803d';
                         ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE - 4);
-                        
-                        // Outline
                         ctx.strokeStyle = '#14532d';
                         ctx.lineWidth = 2;
                         ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     } 
                     else if (tile === EMPTY) {
-                        // Floor pattern
-                        if((x+y)%2===0) {
-                            ctx.fillStyle = '#0f172a';
-                        } else {
-                            ctx.fillStyle = '#1e293b';
-                        }
+                        if((x+y)%2===0) ctx.fillStyle = '#0f172a';
+                        else ctx.fillStyle = '#1e293b';
                         ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     }
                     else if (tile === DOOR) {
-                        // Glowing Door
                         ctx.fillStyle = '#0f172a';
                         ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                        
                         ctx.shadowBlur = 20;
                         ctx.shadowColor = '#4ade80';
                         ctx.fillStyle = '#22c55e';
                         ctx.fillRect(x * TILE_SIZE + 4, y * TILE_SIZE + 4, TILE_SIZE - 8, TILE_SIZE - 8);
-                        
-                        // Symbol inside
                         ctx.shadowBlur = 0;
                         ctx.fillStyle = '#ffffff';
                         ctx.font = '16px sans-serif';
@@ -693,7 +584,6 @@
                 }
             }
 
-            // Draw Collectibles
             for(let c of collectibles) {
                 if(!c.active) continue;
                 let px = c.x * TILE_SIZE + TILE_SIZE/2;
@@ -711,7 +601,6 @@
                     ctx.lineWidth = 2;
                     ctx.stroke();
                 } else if (c.type === 'powerup') {
-                    // Cyan Diamond
                     ctx.beginPath();
                     ctx.moveTo(px, py - TILE_SIZE/3);
                     ctx.lineTo(px + TILE_SIZE/3, py);
@@ -726,14 +615,11 @@
                 }
             }
 
-            // Draw Manipulator Hover Ghost
             if(hoveredTile.x >= 0 && manipCooldown <= 0) {
                 let tx = hoveredTile.x;
                 let ty = hoveredTile.y;
-                // Check valid spots
                 if(!((tx===0&&ty===0) || (tx===1&&ty===0) || (tx===0&&ty===1) || (tx===GRID_SIZE-1&&ty===GRID_SIZE-1))) {
                     let isRemoving = grid[ty][tx] === WALL;
-                    
                     ctx.fillStyle = isRemoving ? 'rgba(239, 68, 68, 0.4)' : 'rgba(59, 130, 246, 0.4)';
                     ctx.fillRect(tx * TILE_SIZE, ty * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     ctx.strokeStyle = isRemoving ? '#ef4444' : '#3b82f6';
@@ -742,33 +628,24 @@
                 }
             }
 
-            // Draw Runner
             ctx.beginPath();
             ctx.arc(runner.x * TILE_SIZE, runner.y * TILE_SIZE, PLAYER_RADIUS, 0, Math.PI * 2);
-            
-            // Color based on round (Round 1: P1 Red, Round 2: P2 Blue)
             const playerColor = currentRound === 1 ? '#ef4444' : '#3b82f6';
             const playerGlow = currentRound === 1 ? 'rgba(239,68,68,0.6)' : 'rgba(59,130,246,0.6)';
-            
             ctx.fillStyle = playerColor;
             ctx.shadowBlur = 15;
-            // Overcharge glow if powerup active
             if(runnerPowerupTime > 0) {
                 ctx.shadowColor = '#22d3ee';
                 ctx.shadowBlur = 25;
             } else {
                 ctx.shadowColor = playerGlow;
             }
-            
             ctx.fill();
             ctx.shadowBlur = 0;
-            
-            // Player border outline
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Draw powerup trail/indicator
             if(runnerPowerupTime > 0) {
                 ctx.beginPath();
                 ctx.arc(runner.x * TILE_SIZE, runner.y * TILE_SIZE, PLAYER_RADIUS + 4, 0, Math.PI * 2);
@@ -778,8 +655,6 @@
                 ctx.setLineDash([]);
             }
         }
-
-        // Start Loop
         requestAnimationFrame(gameLoop);
     </script>
 </body>
