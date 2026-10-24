@@ -2,19 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Arena 1 - Speed Breach Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Level 1 Laser Tag - Arena 1 Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     body {
       background: #06070c;
       color: #fff;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       min-height: 100vh;
-      overflow: hidden;
+      overflow-x: hidden;
     }
     #gameContainer {
       position: relative;
@@ -22,6 +20,8 @@
       box-shadow: 0 0 35px rgba(0, 243, 255, 0.15);
       border-radius: 8px;
       overflow: hidden;
+      width: 1000px;
+      height: 600px;
     }
     canvas {
       display: block;
@@ -33,735 +33,903 @@
       left: 0;
       width: 100%;
       height: 48px;
-      background: rgba(10, 12, 22, 0.85);
+      background: rgba(10, 12, 22, 0.9);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 0 20px;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       letter-spacing: 1px;
       text-transform: uppercase;
       z-index: 5;
     }
     .hud-blue { color: #00f3ff; text-shadow: 0 0 8px rgba(0, 243, 255, 0.6); }
     .hud-red { color: #ff2a5f; text-shadow: 0 0 8px rgba(255, 42, 95, 0.6); }
-    .hud-timer { font-size: 20px; color: #ffd700; }
+    .hud-timer { font-size: 20px; color: #ffd700; font-family: monospace; }
     .hud-timer.urgent { color: #ff2a5f; animation: pulse 0.5s infinite alternate; }
     @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
-    
-    #transitionOverlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(6, 7, 12, 0.98); z-index: 100; display: none;
-      flex-direction: column; align-items: center; justify-content: center;
-      font-size: 42px; font-weight: bold; color: #00f3ff; 
-      text-shadow: 0 0 25px #00f3ff; font-family: monospace; text-align: center;
+
+    /* Cyber button styling */
+    .btn-cyber {
+      background: linear-gradient(135deg, #00f3ff, #ff2a5f);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4), 0 0 30px rgba(255, 42, 95, 0.4);
+      transition: all 0.2s ease-in-out;
+    }
+    .btn-cyber:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.7), 0 0 45px rgba(255, 42, 95, 0.7);
+    }
+    .btn-cyber:active {
+      transform: translateY(1px) scale(0.98);
     }
   </style>
 </head>
-<body>
+<body class="flex flex-col items-center justify-center p-4">
 
-<div id="gameContainer">
-  <div id="hud">
-    <div id="p1Hud" class="hud-blue">P1 (CYAN): ATTACKER</div>
-    <div id="timerHud" class="hud-timer">60.0s</div>
-    <div id="p2Hud" class="hud-red">P2 (RED): DEFENDER</div>
+  <!-- Main Game Frame -->
+  <div id="gameContainer">
+    <!-- Top HUD Bar -->
+    <div id="hud">
+      <div id="p1Hud" class="hud-blue">P1 (CYAN): ATTACKER</div>
+      <div id="timerHud" class="hud-timer">60.0s</div>
+      <div id="p2Hud" class="hud-red">P2 (RED): DEFENDER</div>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+    <!-- LEVEL 1 LASER TAG Intro Overlay Screen -->
+    <div id="titleScreen" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0c16]/95 backdrop-blur-md px-8 text-center">
+      <div class="inline-block px-3 py-1 mb-2 text-xs font-bold tracking-widest text-[#ffd700] uppercase border border-[#ffd700]/40 rounded-full bg-[#ffd700]/10">
+        ARENA 1 / 3
+      </div>
+
+      <h1 class="text-4xl md:text-5xl font-extrabold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#00f3ff] via-[#ffffff] to-[#ff2a5f] drop-shadow-[0_0_20px_rgba(0,243,255,0.6)]">
+        LEVEL 1 LASER TAG
+      </h1>
+
+      <p class="text-sm md:text-base text-gray-300 max-w-xl mt-3 leading-relaxed">
+        Breach the defense line to reach Door 1 before time runs out. The defender holds infinite ammo and grid lasers. Roles swap automatically mid-match!
+      </p>
+
+      <!-- Player Controls Briefing Grid -->
+      <div class="grid grid-cols-2 gap-4 max-w-xl w-full my-6 text-left text-xs">
+        <!-- Player 1 Card -->
+        <div class="p-3 rounded-lg border border-[#00f3ff]/40 bg-[#00f3ff]/5">
+          <div class="text-[#00f3ff] font-bold text-sm mb-1 flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#00f3ff]"></span> P1 (CYAN)
+          </div>
+          <p class="text-gray-300"><span class="text-white font-semibold">Move:</span> W, A, S, D</p>
+          <p class="text-gray-300"><span class="text-white font-semibold">Fire (Right):</span> Space / F</p>
+          <p class="text-gray-300"><span class="text-white font-semibold">Shield:</span> E / Left Shift</p>
+          <p class="text-gray-300"><span class="text-white font-semibold">Manual Reload:</span> R</p>
+        </div>
+
+        <!-- Player 2 Card -->
+        <div class="p-3 rounded-lg border border-[#ff2a5f]/40 bg-[#ff2a5f]/5">
+          <div class="text-[#ff2a5f] font-bold text-sm mb-1 flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#ff2a5f]"></span> P2 (RED)
+          </div>
+          <p class="text-gray-300"><span class="text-white font-semibold">Move:</span> Arrow Keys</p>
+          <p class="text-gray-300"><span class="text-white font-semibold">Fire (Left):</span> Enter / /</p>
+          <p class="text-gray-300"><span class="text-white font-semibold">Corridor Laser:</span> L / R-Shift</p>
+          <p class="text-gray-300"><span class="text-white font-semibold">Respawn:</span> 3s Auto</p>
+        </div>
+      </div>
+
+      <!-- Start Button -->
+      <button id="startBtn" class="btn-cyber px-8 py-3 rounded-md text-white font-bold tracking-widest text-sm uppercase cursor-pointer">
+        Start Challenge ➔
+      </button>
+
+      <div class="text-[11px] text-gray-500 mt-4">
+        Bullets bounce 3 times off pillars • Pickups include 5s Freeze, Coins & Shields
+      </div>
+    </div>
   </div>
-  <div id="transitionOverlay">LEVEL 2 ARENA:<br>SHIFTING MAZE</div>
-  <canvas id="gameCanvas" width="1000" height="600"></canvas>
-</div>
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const timerHud = document.getElementById('timerHud');
-const p1Hud = document.getElementById('p1Hud');
-const p2Hud = document.getElementById('p2Hud');
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const timerHud = document.getElementById('timerHud');
+    const p1Hud = document.getElementById('p1Hud');
+    const p2Hud = document.getElementById('p2Hud');
+    const titleScreen = document.getElementById('titleScreen');
+    const startBtn = document.getElementById('startBtn');
 
-const W = 1000, H = 600;
-const KEYS = {};
+    const W = 1000, H = 600;
+    const KEYS = {};
 
-window.addEventListener('keydown', (e) => {
-  KEYS[e.key] = true;
-  KEYS[e.code] = true;
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) {
-    e.preventDefault();
-  }
-});
-
-window.addEventListener('keyup', (e) => {
-  KEYS[e.key] = false;
-  KEYS[e.code] = false;
-});
-
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSfx(type) {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  const now = audioCtx.currentTime;
-
-  if (type === 'laser') {
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.linearRampToValueAtTime(0, now + 0.15);
-    osc.start(now);
-    osc.stop(now + 0.15);
-  } else if (type === 'hit') {
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(150, now);
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.linearRampToValueAtTime(0, now + 0.1);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } else if (type === 'coin') {
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, now);
-    osc.frequency.setValueAtTime(1200, now + 0.08);
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.linearRampToValueAtTime(0, now + 0.2);
-    osc.start(now);
-    osc.stop(now + 0.2);
-  }
-}
-
-let currentPhase = 1;
-let phaseTimer = 60.0;
-let phase1Time = 60.0;
-let phase2Time = 60.0;
-let matchOver = false;
-let swapBannerTimer = 0; 
-let matchOverHandled = false;
-
-const door = { x: W - 45, y: H / 2 - 50, w: 25, h: 100 };
-
-const pillars = [
-  { x: 220, y: 120, w: 24, h: 90, vy: 1.4, minY: 70, maxY: 230 },
-  { x: 220, y: 390, w: 24, h: 90, vy: -1.4, minY: 320, maxY: 480 },
-  { x: 400, y: 250, w: 26, h: 110, vy: 1.8, minY: 100, maxY: 440 },
-  { x: 580, y: 150, w: 24, h: 80, vy: -1.5, minY: 80, maxY: 260 },
-  { x: 580, y: 380, w: 24, h: 80, vy: 1.5, minY: 300, maxY: 480 },
-  { x: 740, y: 180, w: 22, h: 95, vy: 2.0, minY: 100, maxY: 420 }
-];
-
-const laserTraps = [
-  { y: 160, h: 12, active: false },
-  { y: 300, h: 12, active: false },
-  { y: 440, h: 12, active: false }
-];
-let laserCooldown = 0;
-let laserActiveTime = 0;
-
-let pickups = [];
-function spawnPickups() {
-  pickups = [
-    { x: 310, y: 180, r: 12, type: 'coin' },
-    { x: 310, y: 420, r: 12, type: 'coin' },
-    { x: 500, y: 140, r: 14, type: 'freeze' },
-    { x: 500, y: 460, r: 14, type: 'shield' },
-    { x: 670, y: 300, r: 12, type: 'coin' },
-    { x: 800, y: 220, r: 12, type: 'coin' },
-    { x: 800, y: 380, r: 12, type: 'coin' }
-  ];
-}
-spawnPickups();
-
-let bullets = [];
-let particles = [];
-
-function createSparks(x, y, color, count = 8) {
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 1 + Math.random() * 3.5;
-    particles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      color,
-      life: 1.0,
-      decay: 0.03 + Math.random() * 0.03
+    window.addEventListener('keydown', (e) => {
+      KEYS[e.key.toLowerCase()] = true;
+      KEYS[e.code] = true;
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) {
+        e.preventDefault();
+      }
     });
-  }
-}
 
-class Fighter {
-  constructor(id, color, isAttacker, startX, startY) {
-    this.id = id;
-    this.color = color;
-    this.isAttacker = isAttacker;
-    this.startX = startX;
-    this.startY = startY;
-    this.reset();
-  }
-  reset() {
-    this.x = this.startX;
-    this.y = this.startY;
-    this.r = 18;
-    this.speed = 3.6;
-    this.hp = this.isAttacker ? 3 : 2;
-    this.maxHp = this.hp;
-    this.dead = false;
-    this.respawnTimer = 0;
-    this.coins = 0;
-    this.mag = 6;
-    this.reloading = false;
-    this.reloadTimer = 0;
-    this.shields = 3;
-    this.shieldActive = false;
-    this.frozenTimer = 0;
-    this.fireCooldown = 0;
-  }
-  update(dt) {
-    if (this.dead) {
-      this.respawnTimer -= dt;
-      if (this.respawnTimer <= 0) {
-        this.dead = false;
-        this.hp = this.maxHp;
+    window.addEventListener('keyup', (e) => {
+      KEYS[e.key.toLowerCase()] = false;
+      KEYS[e.code] = false;
+    });
+
+    // Sound Synthesizer via Web Audio API
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSfx(type) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'laser') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(620, now);
+          osc.frequency.exponentialRampToValueAtTime(80, now + 0.14);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.14);
+          osc.start(now);
+          osc.stop(now + 0.14);
+        } else if (type === 'hit') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(140, now);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'coin') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.setValueAtTime(1250, now + 0.08);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'alarm') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(880, now + 0.1);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+      } catch(e) {}
+    }
+
+    // Match States
+    let gameStarted = false;
+    let currentPhase = 1; // 1 = Blue attacks / Red defends, 2 = Red attacks / Blue defends
+    let phaseTimer = 60.0;
+    let phase1Time = 60.0;
+    let phase2Time = 60.0;
+    let matchOver = false;
+    let swapBannerTimer = 0; // 3.5s transition banner
+
+    // Door 1
+    const door = { x: W - 45, y: H / 2 - 50, w: 25, h: 100 };
+
+    // Moving Pillars (Oscillating cover)
+    const pillars = [
+      { x: 220, y: 120, w: 24, h: 90, vy: 1.4, minY: 70, maxY: 230 },
+      { x: 220, y: 390, w: 24, h: 90, vy: -1.4, minY: 320, maxY: 480 },
+      { x: 400, y: 250, w: 26, h: 110, vy: 1.8, minY: 100, maxY: 440 },
+      { x: 580, y: 150, w: 24, h: 80, vy: -1.5, minY: 80, maxY: 260 },
+      { x: 580, y: 380, w: 24, h: 80, vy: 1.5, minY: 300, maxY: 480 },
+      { x: 740, y: 180, w: 22, h: 95, vy: 2.0, minY: 100, maxY: 420 }
+    ];
+
+    // Corridor Lasers (Defensive Trap)
+    const laserTraps = [
+      { y: 160, h: 12, active: false },
+      { y: 300, h: 12, active: false },
+      { y: 440, h: 12, active: false }
+    ];
+    let laserCooldown = 0;
+    let laserActiveTime = 0;
+
+    // Pickups
+    let pickups = [];
+    function spawnPickups() {
+      pickups = [
+        { x: 310, y: 180, r: 12, type: 'coin' },
+        { x: 310, y: 420, r: 12, type: 'coin' },
+        { x: 500, y: 140, r: 14, type: 'freeze' },
+        { x: 500, y: 460, r: 14, type: 'shield' },
+        { x: 670, y: 300, r: 12, type: 'coin' },
+        { x: 800, y: 220, r: 12, type: 'coin' },
+        { x: 800, y: 380, r: 12, type: 'coin' }
+      ];
+    }
+    spawnPickups();
+
+    // Bullets & Sparks
+    let bullets = [];
+    let particles = [];
+
+    function createSparks(x, y, color, count = 8) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 3.5;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color,
+          life: 1.0,
+          decay: 0.03 + Math.random() * 0.03
+        });
+      }
+    }
+
+    // Fighter Class
+    class Fighter {
+      constructor(id, color, isAttacker, startX, startY) {
+        this.id = id;
+        this.color = color;
+        this.isAttacker = isAttacker;
+        this.startX = startX;
+        this.startY = startY;
+        this.reset();
+      }
+
+      reset() {
         this.x = this.startX;
         this.y = this.startY;
-      }
-      return;
-    }
-    if (this.frozenTimer > 0) {
-      this.frozenTimer -= dt;
-    }
-    let mx = 0, my = 0;
-    const isP1 = (this.id === 1);
-    if (this.frozenTimer <= 0) {
-      if (isP1) {
-        if (KEYS['KeyW'] || KEYS['w']) my -= 1;
-        if (KEYS['KeyS'] || KEYS['s']) my += 1;
-        if (KEYS['KeyA'] || KEYS['a']) mx -= 1;
-        if (KEYS['KeyD'] || KEYS['d']) mx += 1;
-      } else {
-        if (KEYS['ArrowUp']) my -= 1;
-        if (KEYS['ArrowDown']) my += 1;
-        if (KEYS['ArrowLeft']) mx -= 1;
-        if (KEYS['ArrowRight']) mx += 1;
-      }
-      if (mx !== 0 && my !== 0) {
-        mx *= 0.7071;
-        my *= 0.7071;
-      }
-      this.x += mx * this.speed;
-      this.y += my * this.speed;
-    }
-    if (this.isAttacker) {
-      const shieldKey = isP1 ? (KEYS['ShiftLeft'] || KEYS['KeyE']) : (KEYS['ShiftRight'] || KEYS['ControlRight'] || KEYS['Numpad0']);
-      if (shieldKey && this.shields > 0) {
-        this.shieldActive = true;
-      } else {
-        if (this.shieldActive) this.shields = Math.max(0, this.shields - 1);
+        this.r = 18;
+        this.speed = 3.6;
+        this.hp = this.isAttacker ? 3 : 2;
+        this.maxHp = this.hp;
+        this.dead = false;
+        this.respawnTimer = 0;
+        this.coins = 0;
+
+        // Attacker specific
+        this.mag = 6;
+        this.reloading = false;
+        this.reloadTimer = 0;
+        this.shields = 3;
         this.shieldActive = false;
+        this.frozenTimer = 0;
+
+        // Defender specific
+        this.fireCooldown = 0;
       }
-      if (this.reloading) {
-        this.reloadTimer -= dt;
-        if (this.reloadTimer <= 0) {
-          this.mag = 6;
-          this.reloading = false;
+
+      update(dt) {
+        if (this.dead) {
+          this.respawnTimer -= dt;
+          if (this.respawnTimer <= 0) {
+            this.dead = false;
+            this.hp = this.maxHp;
+            this.x = this.startX;
+            this.y = this.startY;
+          }
+          return;
+        }
+
+        if (this.frozenTimer > 0) {
+          this.frozenTimer -= dt;
+        }
+
+        // Movement Vectors
+        let mx = 0, my = 0;
+        const isP1 = (this.id === 1);
+
+        if (this.frozenTimer <= 0) {
+          if (isP1) {
+            if (KEYS['KeyW'] || KEYS['w']) my -= 1;
+            if (KEYS['KeyS'] || KEYS['s']) my += 1;
+            if (KEYS['KeyA'] || KEYS['a']) mx -= 1;
+            if (KEYS['KeyD'] || KEYS['d']) mx += 1;
+          } else {
+            // Player 2 (Red): Direct arrow controls without inversion
+            if (KEYS['arrowup']) my -= 1;
+            if (KEYS['arrowdown']) my += 1;
+            if (KEYS['arrowleft']) mx -= 1;
+            if (KEYS['arrowright']) mx += 1;
+          }
+
+          if (mx !== 0 && my !== 0) {
+            mx *= 0.7071;
+            my *= 0.7071;
+          }
+
+          this.x += mx * this.speed;
+          this.y += my * this.speed;
+        }
+
+        // Shield Controls (Attacker only, usable even during 5s freeze)
+        if (this.isAttacker) {
+          const shieldKey = isP1 
+            ? (KEYS['shiftleft'] || KEYS['e'] || KEYS['keye']) 
+            : (KEYS['shiftright'] || KEYS['0'] || KEYS['numpad0'] || KEYS['controlright']);
+
+          if (shieldKey && this.shields > 0) {
+            this.shieldActive = true;
+          } else {
+            if (this.shieldActive) this.shields = Math.max(0, this.shields - 1);
+            this.shieldActive = false;
+          }
+
+          // Manual Reload Trigger
+          const reloadKey = isP1 ? (KEYS['r'] || KEYS['keyr']) : false;
+          if (reloadKey && !this.reloading && this.mag < 6) {
+            this.reloading = true;
+            this.reloadTimer = 5.0;
+          }
+
+          // Reload sequence
+          if (this.reloading) {
+            this.reloadTimer -= dt;
+            if (this.reloadTimer <= 0) {
+              this.mag = 6;
+              this.reloading = false;
+            }
+          }
+        } else {
+          this.shieldActive = false;
+          if (this.fireCooldown > 0) this.fireCooldown -= dt;
+        }
+
+        // Constrain within Arena walls
+        this.x = Math.max(this.r + 5, Math.min(W - this.r - 5, this.x));
+        this.y = Math.max(this.r + 52, Math.min(H - this.r - 8, this.y));
+
+        // Pillars dynamic collision resolution
+        pillars.forEach(p => {
+          const cx = Math.max(p.x, Math.min(this.x, p.x + p.w));
+          const cy = Math.max(p.y, Math.min(this.y, p.y + p.h));
+          const dx = this.x - cx;
+          const dy = this.y - cy;
+          const dist = Math.hypot(dx, dy);
+          if (dist < this.r && dist > 0) {
+            this.x = cx + (dx / dist) * this.r;
+            this.y = cy + (dy / dist) * this.r;
+          }
+        });
+
+        this.handleShooting();
+      }
+
+      handleShooting() {
+        if (this.dead || this.frozenTimer > 0) return;
+        const isP1 = (this.id === 1);
+
+        if (this.isAttacker) {
+          const shootKey = isP1 ? (KEYS['space'] || KEYS['f'] || KEYS['keyf']) : (KEYS['enter'] || KEYS['/'] || KEYS['slash']);
+          if (shootKey && !this.reloading && this.mag > 0 && !this._lastShot) {
+            this.shoot(0); // STRICTLY HORIZONTAL RIGHT (+X)
+            this.mag--;
+            this._lastShot = true;
+            if (this.mag === 0) {
+              this.reloading = true;
+              this.reloadTimer = 5.0;
+            }
+          }
+          if (!shootKey) this._lastShot = false;
+        } else {
+          const shootKey = isP1 ? (KEYS['space'] || KEYS['f'] || KEYS['keyf']) : (KEYS['enter'] || KEYS['/'] || KEYS['slash']);
+          if (shootKey && this.fireCooldown <= 0) {
+            this.shoot(Math.PI); // STRICTLY HORIZONTAL LEFT (-X)
+            this.fireCooldown = 0.32;
+          }
         }
       }
-    } else {
-      this.shieldActive = false;
-      if (this.fireCooldown > 0) this.fireCooldown -= dt;
-    }
-    this.x = Math.max(this.r + 5, Math.min(W - this.r - 5, this.x));
-    this.y = Math.max(this.r + 52, Math.min(H - this.r - 8, this.y));
-    pillars.forEach(p => {
-      const cx = Math.max(p.x, Math.min(this.x, p.x + p.w));
-      const cy = Math.max(p.y, Math.min(this.y, p.y + p.h));
-      const dx = this.x - cx;
-      const dy = this.y - cy;
-      const dist = Math.hypot(dx, dy);
-      if (dist < this.r && dist > 0) {
-        this.x = cx + (dx / dist) * this.r;
-        this.y = cy + (dy / dist) * this.r;
+
+      shoot(angle) {
+        playSfx('laser');
+        const bSpeed = 9;
+        bullets.push({
+          x: this.x + Math.cos(angle) * (this.r + 4),
+          y: this.y,
+          vx: Math.cos(angle) * bSpeed,
+          vy: 0,
+          owner: this,
+          color: this.color,
+          bounces: 3
+        });
       }
-    });
-    this.handleShooting();
-  }
-  handleShooting() {
-    if (this.dead || this.frozenTimer > 0) return;
-    const isP1 = (this.id === 1);
-    if (this.isAttacker) {
-      const shootKey = isP1 ? (KEYS['Space'] || KEYS['KeyF']) : (KEYS['Enter'] || KEYS['Slash']);
-      if (shootKey && !this.reloading && this.mag > 0 && !this._lastShot) {
-        this.shoot(0); 
-        this.mag--;
-        this._lastShot = true;
-        if (this.mag === 0) {
-          this.reloading = true;
-          this.reloadTimer = 5.0;
+
+      takeHit() {
+        if (this.shieldActive) {
+          playSfx('coin');
+          createSparks(this.x, this.y, '#00f3ff', 10);
+          return;
+        }
+        this.hp--;
+        playSfx('hit');
+        createSparks(this.x, this.y, this.color, 16);
+
+        if (this.hp <= 0) {
+          this.dead = true;
+          this.respawnTimer = 3.0; // 3-second resurrect
+          this.x = -999;
         }
       }
-      if (!shootKey) this._lastShot = false;
-    } else {
-      const shootKey = isP1 ? (KEYS['Space'] || KEYS['KeyF']) : (KEYS['Enter'] || KEYS['Slash']);
-      if (shootKey && this.fireCooldown <= 0) {
-        this.shoot(Math.PI); 
-        this.fireCooldown = 0.32;
-      }
-    }
-  }
-  shoot(angle) {
-    playSfx('laser');
-    const bSpeed = 9;
-    bullets.push({
-      x: this.x + Math.cos(angle) * (this.r + 4),
-      y: this.y,
-      vx: Math.cos(angle) * bSpeed,
-      vy: 0,
-      owner: this,
-      color: this.color,
-      bounces: 3
-    });
-  }
-  takeHit() {
-    if (this.shieldActive) {
-      playSfx('coin');
-      createSparks(this.x, this.y, '#00f3ff', 10);
-      return;
-    }
-    this.hp--;
-    playSfx('hit');
-    createSparks(this.x, this.y, this.color, 16);
-    if (this.hp <= 0) {
-      this.dead = true;
-      this.respawnTimer = 3.0; 
-      this.x = -999;
-    }
-  }
-  draw() {
-    if (this.dead) return;
-    ctx.save();
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = this.color;
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.r * 0.45, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(this.x, this.y);
-    const barrelDir = this.isAttacker ? 1 : -1;
-    ctx.lineTo(this.x + barrelDir * (this.r + 9), this.y);
-    ctx.stroke();
-    if (this.shieldActive) {
-      ctx.save();
-      ctx.strokeStyle = '#00f3ff';
-      ctx.lineWidth = 3;
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#00f3ff';
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r + 8, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(0, 243, 255, 0.18)';
-      ctx.fill();
-      ctx.restore();
-    }
-    if (this.frozenTimer > 0) {
-      ctx.save();
-      ctx.strokeStyle = '#80e5ff';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r + 14, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-    if (this.isAttacker) {
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'center';
-      const statusText = this.reloading ? `RELOADING ${this.reloadTimer.toFixed(1)}s` : `AMMO: ${this.mag}/6  SH: ${this.shields}`;
-      ctx.fillText(statusText, this.x, this.y - this.r - 6);
-    }
-  }
-}
 
-const p1 = new Fighter(1, '#00f3ff', true, 60, H / 2);
-const p2 = new Fighter(2, '#ff2a5f', false, W - 110, H / 2);
+      draw() {
+        if (this.dead) return;
 
-function swapRoles() {
-  currentPhase = 2;
-  phaseTimer = 60.0;
-  swapBannerTimer = 3.5;
-  p1.isAttacker = false;
-  p1.startX = W - 110;
-  p1.startY = H / 2;
-  p1.reset();
-  p2.isAttacker = true;
-  p2.startX = 60;
-  p2.startY = H / 2;
-  p2.reset();
-  bullets = [];
-  spawnPickups();
-}
+        // Body glow
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
 
-let lastTime = performance.now();
-function loop(now) {
-  const dt = Math.min((now - lastTime) / 1000, 0.1);
-  lastTime = now;
-  update(dt);
-  render();
-  requestAnimationFrame(loop);
-}
+        // Core
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
 
-function update(dt) {
-  if (matchOver) {
-    if (!matchOverHandled) {
-      matchOverHandled = true;
-      let winner = 0;
-      if (phase1Time < phase2Time) winner = 1;
-      else if (phase2Time < phase1Time) winner = 2;
+        // Fixed Horizontal Gun Barrel
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        const barrelDir = this.isAttacker ? 1 : -1;
+        ctx.lineTo(this.x + barrelDir * (this.r + 9), this.y);
+        ctx.stroke();
 
-      // Extract existing scores or initialize
-      const urlParams = new URLSearchParams(window.location.search);
-      let p1Score = parseInt(urlParams.get('p1') || '0');
-      let p2Score = parseInt(urlParams.get('p2') || '0');
+        // Active Shield Sphere
+        if (this.shieldActive) {
+          ctx.save();
+          ctx.strokeStyle = '#00f3ff';
+          ctx.lineWidth = 3;
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = '#00f3ff';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.r + 8, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(0, 243, 255, 0.18)';
+          ctx.fill();
+          ctx.restore();
+        }
 
-      if(winner === 1) p1Score++;
-      if(winner === 2) p2Score++;
+        // Freeze Aura
+        if (this.frozenTimer > 0) {
+          ctx.save();
+          ctx.strokeStyle = '#80e5ff';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.r + 14, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
 
-      // Automatically transition to next arena
-      setTimeout(() => {
-        document.getElementById('transitionOverlay').style.display = 'flex';
-        setTimeout(() => {
-           window.location.href = `arena_2.html?p1=${p1Score}&p2=${p2Score}`;
-        }, 3000);
-      }, 3500);
-    }
-    return;
-  }
-
-  if (swapBannerTimer > 0) {
-    swapBannerTimer -= dt;
-    return;
-  }
-
-  phaseTimer -= dt;
-  if (phaseTimer <= 0) {
-    phaseTimer = 0;
-    if (currentPhase === 1) {
-      phase1Time = 60.0;
-      swapRoles();
-      return;
-    } else {
-      phase2Time = 60.0;
-      matchOver = true;
-      return;
-    }
-  }
-
-  timerHud.textContent = `${phaseTimer.toFixed(1)}s`;
-  if (phaseTimer <= 10) timerHud.classList.add('urgent');
-  else timerHud.classList.remove('urgent');
-
-  if (currentPhase === 1) {
-    p1Hud.textContent = `P1 (CYAN): ATTACKER [AMMO: ${p1.mag} | SH: ${p1.shields}]`;
-    p2Hud.textContent = `P2 (RED): DEFENDER [LASER: ${laserCooldown > 0 ? laserCooldown.toFixed(1)+'s' : 'READY'}]`;
-  } else {
-    p1Hud.textContent = `P1 (CYAN): DEFENDER [LASER: ${laserCooldown > 0 ? laserCooldown.toFixed(1)+'s' : 'READY'}]`;
-    p2Hud.textContent = `P2 (RED): ATTACKER [AMMO: ${p2.mag} | SH: ${p2.shields}]`;
-  }
-
-  pillars.forEach(p => {
-    p.y += p.vy;
-    if (p.y <= p.minY || p.y >= p.maxY) p.vy *= -1;
-  });
-
-  const defenderPlayer = currentPhase === 1 ? p2 : p1;
-  const isP1Defender = defenderPlayer.id === 1;
-  const triggerLaser = isP1Defender ? (KEYS['KeyQ'] || KEYS['KeyE']) : (KEYS['KeyL'] || KEYS['ShiftRight'] || KEYS['Enter']);
-
-  if (laserCooldown > 0) {
-    laserCooldown -= dt;
-  } else if (triggerLaser && !defenderPlayer.dead) {
-    laserActiveTime = 1.4;
-    laserCooldown = 5.0; 
-    laserTraps.forEach(trap => trap.active = true);
-    playSfx('laser');
-  }
-
-  if (laserActiveTime > 0) {
-    laserActiveTime -= dt;
-    if (laserActiveTime <= 0) {
-      laserTraps.forEach(trap => trap.active = false);
-    }
-  }
-
-  p1.update(dt);
-  p2.update(dt);
-
-  const activeAttacker = currentPhase === 1 ? p1 : p2;
-
-  if (laserActiveTime > 0 && !activeAttacker.dead) {
-    laserTraps.forEach(trap => {
-      if (activeAttacker.y + activeAttacker.r > trap.y && activeAttacker.y - activeAttacker.r < trap.y + trap.h) {
-        if (!activeAttacker.shieldActive) {
-          activeAttacker.takeHit();
+        // Overhead Ammo / Shield Info
+        if (this.isAttacker) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          const statusText = this.reloading 
+            ? `RELOAD ${this.reloadTimer.toFixed(1)}s` 
+            : `AMMO: ${this.mag}/6  SH: ${this.shields}`;
+          ctx.fillText(statusText, this.x, this.y - this.r - 6);
         }
       }
+    }
+
+    // Instantiate Players
+    const p1 = new Fighter(1, '#00f3ff', true, 60, H / 2);
+    const p2 = new Fighter(2, '#ff2a5f', false, W - 110, H / 2);
+
+    function swapRoles() {
+      playSfx('alarm');
+      currentPhase = 2;
+      phaseTimer = 60.0;
+      swapBannerTimer = 3.5;
+
+      p1.isAttacker = false;
+      p1.startX = W - 110;
+      p1.startY = H / 2;
+      p1.reset();
+
+      p2.isAttacker = true;
+      p2.startX = 60;
+      p2.startY = H / 2;
+      p2.reset();
+
+      bullets = [];
+      spawnPickups();
+    }
+
+    // Start Challenge Button handler
+    startBtn.addEventListener('click', () => {
+      initAudio();
+      titleScreen.style.display = 'none';
+      gameStarted = true;
     });
-  }
 
-  for (let i = bullets.length - 1; i >= 0; i--) {
-    const b = bullets[i];
-    b.x += b.vx;
-    b.y += b.vy;
-    let bounced = false;
-    if (b.y <= 54 || b.y >= H - 6) {
-      b.vy *= -1;
-      bounced = true;
-    }
-    if (b.x <= 8 || b.x >= W - 8) {
-      b.vx *= -1;
-      bounced = true;
-    }
-    pillars.forEach(p => {
-      if (b.x > p.x && b.x < p.x + p.w && b.y > p.y && b.y < p.y + p.h) {
-        b.vx *= -1;
-        bounced = true;
-      }
-    });
-    if (bounced) {
-      b.bounces--;
-      createSparks(b.x, b.y, b.color, 4);
-      if (b.bounces <= 0) {
-        bullets.splice(i, 1);
-        continue;
-      }
-    }
-    const target = b.owner === p1 ? p2 : p1;
-    if (!target.dead && Math.hypot(b.x - target.x, b.y - target.y) < target.r + 4) {
-      target.takeHit();
-      bullets.splice(i, 1);
-      continue;
-    }
-    for (let pi = pickups.length - 1; pi >= 0; pi--) {
-      const pick = pickups[pi];
-      if (Math.hypot(b.x - pick.x, b.y - pick.y) < pick.r + 4) {
-        applyPickup(pick, b.owner);
-        pickups.splice(pi, 1);
-        bullets.splice(i, 1);
-        break;
-      }
-    }
-  }
+    // Game Loop
+    let lastTime = performance.now();
+    function loop(now) {
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
 
-  [p1, p2].forEach(player => {
-    if (player.dead) return;
-    for (let i = pickups.length - 1; i >= 0; i--) {
-      const p = pickups[i];
-      if (Math.hypot(player.x - p.x, player.y - p.y) < player.r + p.r) {
-        applyPickup(p, player);
-        pickups.splice(i, 1);
+      if (gameStarted) {
+        update(dt);
       }
-    }
-  });
+      render();
 
-  if (!activeAttacker.dead) {
-    if (activeAttacker.x + activeAttacker.r >= door.x &&
-        activeAttacker.y >= door.y && activeAttacker.y <= door.y + door.h) {
-      playSfx('coin');
+      requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+      if (matchOver) return;
+
+      // 3.5s Roles Swapped Intermission Banner
+      if (swapBannerTimer > 0) {
+        swapBannerTimer -= dt;
+        return;
+      }
+
+      // Round Timer
+      phaseTimer -= dt;
+      if (phaseTimer <= 0) {
+        phaseTimer = 0;
+        if (currentPhase === 1) {
+          phase1Time = 60.0;
+          swapRoles();
+          return;
+        } else {
+          phase2Time = 60.0;
+          matchOver = true;
+          return;
+        }
+      }
+
+      // HUD Updates
+      timerHud.textContent = `${phaseTimer.toFixed(1)}s`;
+      if (phaseTimer <= 10) timerHud.classList.add('urgent');
+      else timerHud.classList.remove('urgent');
+
       if (currentPhase === 1) {
-        phase1Time = 60.0 - phaseTimer;
-        swapRoles();
+        p1Hud.textContent = `P1 (CYAN): ATTACKER [AMMO: ${p1.mag} | SH: ${p1.shields}]`;
+        p2Hud.textContent = `P2 (RED): DEFENDER [LASER: ${laserCooldown > 0 ? laserCooldown.toFixed(1)+'s' : 'READY'}]`;
       } else {
-        phase2Time = 60.0 - phaseTimer;
-        matchOver = true;
+        p1Hud.textContent = `P1 (CYAN): DEFENDER [LASER: ${laserCooldown > 0 ? laserCooldown.toFixed(1)+'s' : 'READY'}]`;
+        p2Hud.textContent = `P2 (RED): ATTACKER [AMMO: ${p2.mag} | SH: ${p2.shields}]`;
+      }
+
+      // Update Moving Cover Pillars
+      pillars.forEach(p => {
+        p.y += p.vy;
+        if (p.y <= p.minY || p.y >= p.maxY) p.vy *= -1;
+      });
+
+      // Defender Laser Trap Controls (5s cooldown)
+      const defenderPlayer = currentPhase === 1 ? p2 : p1;
+      const isP1Defender = defenderPlayer.id === 1;
+      const triggerLaser = isP1Defender 
+        ? (KEYS['q'] || KEYS['keyq'] || KEYS['e'] || KEYS['keye']) 
+        : (KEYS['l'] || KEYS['keyl'] || KEYS['shiftright'] || KEYS['enter']);
+
+      if (laserCooldown > 0) {
+        laserCooldown -= dt;
+      } else if (triggerLaser && !defenderPlayer.dead) {
+        laserActiveTime = 1.4; // 1.4s pulse duration
+        laserCooldown = 5.0;   // 5s cooldown
+        laserTraps.forEach(trap => trap.active = true);
+        playSfx('laser');
+      }
+
+      if (laserActiveTime > 0) {
+        laserActiveTime -= dt;
+        if (laserActiveTime <= 0) {
+          laserTraps.forEach(trap => trap.active = false);
+        }
+      }
+
+      // Update Players
+      p1.update(dt);
+      p2.update(dt);
+
+      const activeAttacker = currentPhase === 1 ? p1 : p2;
+
+      // Corridor Laser lethal hits on Attacker
+      if (laserActiveTime > 0 && !activeAttacker.dead) {
+        laserTraps.forEach(trap => {
+          if (activeAttacker.y + activeAttacker.r > trap.y && activeAttacker.y - activeAttacker.r < trap.y + trap.h) {
+            if (!activeAttacker.shieldActive) {
+              activeAttacker.takeHit();
+            }
+          }
+        });
+      }
+
+      // Bullets Update & Ricochet
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // Boundary bounces
+        let bounced = false;
+        if (b.y <= 54 || b.y >= H - 6) {
+          b.vy *= -1;
+          bounced = true;
+        }
+        if (b.x <= 8 || b.x >= W - 8) {
+          b.vx *= -1;
+          bounced = true;
+        }
+
+        // Dynamic pillar bounces
+        pillars.forEach(p => {
+          if (b.x > p.x && b.x < p.x + p.w && b.y > p.y && b.y < p.y + p.h) {
+            b.vx *= -1;
+            bounced = true;
+          }
+        });
+
+        if (bounced) {
+          b.bounces--;
+          createSparks(b.x, b.y, b.color, 4);
+          if (b.bounces <= 0) {
+            bullets.splice(i, 1);
+            continue;
+          }
+        }
+
+        // Hit opponent
+        const target = b.owner === p1 ? p2 : p1;
+        if (!target.dead && Math.hypot(b.x - target.x, b.y - target.y) < target.r + 4) {
+          target.takeHit();
+          bullets.splice(i, 1);
+          continue;
+        }
+
+        // Bullets trigger Pickups directly
+        for (let pi = pickups.length - 1; pi >= 0; pi--) {
+          const pick = pickups[pi];
+          if (Math.hypot(b.x - pick.x, b.y - pick.y) < pick.r + 4) {
+            applyPickup(pick, b.owner);
+            pickups.splice(pi, 1);
+            bullets.splice(i, 1);
+            break;
+          }
+        }
+      }
+
+      // Touch / Collect Pickups
+      [p1, p2].forEach(player => {
+        if (player.dead) return;
+        for (let i = pickups.length - 1; i >= 0; i--) {
+          const p = pickups[i];
+          if (Math.hypot(player.x - p.x, player.y - p.y) < player.r + p.r) {
+            applyPickup(p, player);
+            pickups.splice(i, 1);
+          }
+        }
+      });
+
+      // Check Door Reached by Attacker
+      if (!activeAttacker.dead) {
+        if (activeAttacker.x + activeAttacker.r >= door.x &&
+            activeAttacker.y >= door.y && activeAttacker.y <= door.y + door.h) {
+          playSfx('coin');
+          if (currentPhase === 1) {
+            phase1Time = 60.0 - phaseTimer;
+            swapRoles();
+          } else {
+            phase2Time = 60.0 - phaseTimer;
+            matchOver = true;
+          }
+        }
+      }
+
+      // Particles decay
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life -= pt.decay;
+        if (pt.life <= 0) particles.splice(i, 1);
       }
     }
-  }
 
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const pt = particles[i];
-    pt.x += pt.vx;
-    pt.y += pt.vy;
-    pt.life -= pt.decay;
-    if (pt.life <= 0) particles.splice(i, 1);
-  }
-}
-
-function applyPickup(pick, player) {
-  playSfx('coin');
-  createSparks(pick.x, pick.y, '#ffd700', 12);
-  if (pick.type === 'coin') {
-    player.coins += 100;
-  } else if (pick.type === 'shield' && player.isAttacker) {
-    player.shields = Math.min(5, player.shields + 1);
-  } else if (pick.type === 'freeze') {
-    const activeAttacker = currentPhase === 1 ? p1 : p2;
-    activeAttacker.frozenTimer = 5.0;
-  }
-}
-
-function render() {
-  ctx.clearRect(0, 0, W, H);
-
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 40) {
-    ctx.beginPath(); ctx.moveTo(x, 48); ctx.lineTo(x, H); ctx.stroke();
-  }
-  for (let y = 48; y < H; y += 40) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-  }
-
-  laserTraps.forEach(trap => {
-    ctx.fillStyle = trap.active ? 'rgba(255, 42, 95, 0.4)' : 'rgba(255, 42, 95, 0.05)';
-    ctx.fillRect(0, trap.y, W, trap.h);
-    if (trap.active) {
-      ctx.fillStyle = '#ff2a5f';
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = '#ff2a5f';
-      ctx.fillRect(0, trap.y + 3, W, trap.h - 6);
-      ctx.shadowBlur = 0;
+    function applyPickup(pick, player) {
+      playSfx('coin');
+      createSparks(pick.x, pick.y, '#ffd700', 12);
+      if (pick.type === 'coin') {
+        player.coins += 100;
+      } else if (pick.type === 'shield' && player.isAttacker) {
+        player.shields = Math.min(5, player.shields + 1);
+      } else if (pick.type === 'freeze') {
+        const activeAttacker = currentPhase === 1 ? p1 : p2;
+        activeAttacker.frozenTimer = 5.0; // Freeze attacker for 5 seconds
+      }
     }
-  });
 
-  ctx.save();
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = '#00f3ff';
-  ctx.fillStyle = '#00f3ff';
-  ctx.fillRect(door.x, door.y, door.w, door.h);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(door.x + 4, door.y + 4, door.w - 8, door.h - 8);
-  ctx.restore();
+    function render() {
+      ctx.clearRect(0, 0, W, H);
 
-  ctx.fillStyle = '#1c2338';
-  ctx.strokeStyle = '#3d4b73';
-  ctx.lineWidth = 2;
-  pillars.forEach(p => {
-    ctx.fillRect(p.x, p.y, p.w, p.h);
-    ctx.strokeRect(p.x, p.y, p.w, p.h);
-  });
+      // Cyber Grid Background
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 48); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 48; y < H; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
 
-  pickups.forEach(p => {
-    ctx.save();
-    if (p.type === 'coin') {
-      ctx.fillStyle = '#ffd700';
-      ctx.shadowColor = '#ffd700';
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('$', p.x, p.y + 4);
-    } else if (p.type === 'shield') {
-      ctx.fillStyle = '#00f3ff';
-      ctx.shadowColor = '#00f3ff';
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('SH', p.x, p.y + 4);
-    } else if (p.type === 'freeze') {
-      ctx.fillStyle = '#80e5ff';
-      ctx.shadowColor = '#80e5ff';
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('❄', p.x, p.y + 4);
-    }
-    ctx.restore();
-  });
+      // Corridor Laser Trap Zones
+      laserTraps.forEach(trap => {
+        ctx.fillStyle = trap.active ? 'rgba(255, 42, 95, 0.45)' : 'rgba(255, 42, 95, 0.05)';
+        ctx.fillRect(0, trap.y, W, trap.h);
 
-  bullets.forEach(b => {
-    ctx.save();
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = b.color;
-    ctx.fillStyle = b.color;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  });
+        if (trap.active) {
+          ctx.fillStyle = '#ff2a5f';
+          ctx.shadowBlur = 18;
+          ctx.shadowColor = '#ff2a5f';
+          ctx.fillRect(0, trap.y + 3, W, trap.h - 6);
+          ctx.shadowBlur = 0;
+        }
+      });
 
-  particles.forEach(pt => {
-    ctx.fillStyle = pt.color;
-    ctx.globalAlpha = pt.life;
-    ctx.fillRect(pt.x, pt.y, 3, 3);
-    ctx.globalAlpha = 1.0;
-  });
-
-  p1.draw();
-  p2.draw();
-
-  if (swapBannerTimer > 0) {
-    ctx.fillStyle = 'rgba(6, 7, 12, 0.88)';
-    ctx.fillRect(0, 48, W, H - 48);
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ff2a5f';
-    ctx.shadowColor = '#ff2a5f';
-    ctx.shadowBlur = 25;
-    ctx.font = 'bold 38px monospace';
-    ctx.fillText('⚡ ROLES SWAPPED! ⚡', W / 2, H / 2 - 30);
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 0;
-    ctx.font = '18px sans-serif';
-    ctx.fillText(`Player 1 Infiltration Time: ${phase1Time < 60 ? phase1Time.toFixed(1) + 's' : 'DNF (60.0s)'}`, W / 2, H / 2 + 15);
-    ctx.fillText(`P2 (RED) IS NOW ATTACKING - GO!`, W / 2, H / 2 + 50);
-    ctx.restore();
-  }
-
-  if (matchOver) {
-    ctx.fillStyle = 'rgba(6, 7, 12, 0.94)';
-    ctx.fillRect(0, 48, W, H - 48);
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.shadowBlur = 20;
-
-    let winner = 'DRAW!';
-    if (phase1Time < phase2Time) {
-      winner = '🏆 PLAYER 1 (CYAN) WINS ARENA 1!';
+      // Door 1 (Objective Portal)
+      ctx.save();
+      ctx.shadowBlur = 20;
       ctx.shadowColor = '#00f3ff';
       ctx.fillStyle = '#00f3ff';
-    } else if (phase2Time < phase1Time) {
-      winner = '🏆 PLAYER 2 (RED) WINS ARENA 1!';
-      ctx.shadowColor = '#ff2a5f';
-      ctx.fillStyle = '#ff2a5f';
-    } else {
-      ctx.shadowColor = '#ffd700';
-      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(door.x, door.y, door.w, door.h);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(door.x + 4, door.y + 4, door.w - 8, door.h - 8);
+      ctx.restore();
+
+      // Moving Cover Pillars
+      ctx.fillStyle = '#1c2338';
+      ctx.strokeStyle = '#3d4b73';
+      ctx.lineWidth = 2;
+      pillars.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.strokeRect(p.x, p.y, p.w, p.h);
+      });
+
+      // Pickups
+      pickups.forEach(p => {
+        ctx.save();
+        if (p.type === 'coin') {
+          ctx.fillStyle = '#ffd700';
+          ctx.shadowColor = '#ffd700';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#000';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('$', p.x, p.y + 4);
+        } else if (p.type === 'shield') {
+          ctx.fillStyle = '#00f3ff';
+          ctx.shadowColor = '#00f3ff';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#000';
+          ctx.font = 'bold 10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('SH', p.x, p.y + 4);
+        } else if (p.type === 'freeze') {
+          ctx.fillStyle = '#80e5ff';
+          ctx.shadowColor = '#80e5ff';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#000';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('❄', p.x, p.y + 4);
+        }
+        ctx.restore();
+      });
+
+      // Bullets
+      bullets.forEach(b => {
+        ctx.save();
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = b.color;
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Sparks
+      particles.forEach(pt => {
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.life;
+        ctx.fillRect(pt.x, pt.y, 3, 3);
+        ctx.globalAlpha = 1.0;
+      });
+
+      // Players
+      p1.draw();
+      p2.draw();
+
+      // 3.5s Roles Swapped Transition Slide
+      if (swapBannerTimer > 0) {
+        ctx.fillStyle = 'rgba(6, 7, 12, 0.88)';
+        ctx.fillRect(0, 48, W, H - 48);
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ff2a5f';
+        ctx.shadowColor = '#ff2a5f';
+        ctx.shadowBlur = 25;
+        ctx.font = 'bold 38px monospace';
+        ctx.fillText('⚡ ROLES SWAPPED! ⚡', W / 2, H / 2 - 30);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 0;
+        ctx.font = '18px sans-serif';
+        ctx.fillText(`Player 1 Infiltration Time: ${phase1Time < 60 ? phase1Time.toFixed(1) + 's' : 'DNF (60.0s)'}`, W / 2, H / 2 + 15);
+        ctx.fillText(`P2 (RED) IS NOW ATTACKING - GO!`, W / 2, H / 2 + 50);
+        ctx.restore();
+      }
+
+      // End of Match Victory Modal
+      if (matchOver) {
+        ctx.fillStyle = 'rgba(6, 7, 12, 0.94)';
+        ctx.fillRect(0, 48, W, H - 48);
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 20;
+
+        let winner = 'DRAW!';
+        if (phase1Time < phase2Time) {
+          winner = '🏆 PLAYER 1 (CYAN) WINS ARENA 1!';
+          ctx.shadowColor = '#00f3ff';
+          ctx.fillStyle = '#00f3ff';
+        } else if (phase2Time < phase1Time) {
+          winner = '🏆 PLAYER 2 (RED) WINS ARENA 1!';
+          ctx.shadowColor = '#ff2a5f';
+          ctx.fillStyle = '#ff2a5f';
+        } else {
+          ctx.shadowColor = '#ffd700';
+          ctx.fillStyle = '#ffd700';
+        }
+
+        ctx.font = 'bold 36px monospace';
+        ctx.fillText(winner, W / 2, H / 2 - 40);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 0;
+        ctx.font = '20px monospace';
+        ctx.fillText(`P1 Time: ${phase1Time.toFixed(1)}s   |   P2 Time: ${phase2Time.toFixed(1)}s`, W / 2, H / 2 + 15);
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#888';
+        ctx.fillText('Ready for Arena 2 design specs. Refresh to replay Arena 1.', W / 2, H / 2 + 65);
+        ctx.restore();
+      }
     }
 
-    ctx.font = 'bold 36px monospace';
-    ctx.fillText(winner, W / 2, H / 2 - 40);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 0;
-    ctx.font = '20px monospace';
-    ctx.fillText(`P1 Time: ${phase1Time.toFixed(1)}s   |   P2 Time: ${phase2Time.toFixed(1)}s`, W / 2, H / 2 + 15);
-    ctx.font = '16px sans-serif';
-    ctx.fillStyle = '#888';
-    ctx.fillText('Calculating overall tournament standings...', W / 2, H / 2 + 65);
-    ctx.restore();
-  }
-}
-
-requestAnimationFrame(loop);
-</script>
+    requestAnimationFrame(loop);
+  </script>
 </body>
 </html>
