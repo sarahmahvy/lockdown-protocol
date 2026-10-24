@@ -51,7 +51,6 @@
     .hud-timer.urgent { color: #ff2a5f; animation: pulse 0.5s infinite alternate; }
     @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
 
-    /* Cyber button styling */
     .btn-cyber {
       background: linear-gradient(135deg, #00f3ff, #ff2a5f);
       box-shadow: 0 0 20px rgba(0, 243, 255, 0.4), 0 0 30px rgba(255, 42, 95, 0.4);
@@ -64,23 +63,29 @@
     .btn-cyber:active {
       transform: translateY(1px) scale(0.98);
     }
+
+    #transitionOverlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(6, 7, 12, 0.98); z-index: 100; display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      font-size: 42px; font-weight: bold; color: #00f3ff; 
+      text-shadow: 0 0 25px #00f3ff; font-family: monospace; text-align: center;
+    }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center p-4">
 
-  <!-- Main Game Frame -->
   <div id="gameContainer">
-    <!-- Top HUD Bar -->
     <div id="hud">
       <div id="p1Hud" class="hud-blue">P1 (CYAN): ATTACKER</div>
       <div id="timerHud" class="hud-timer">60.0s</div>
       <div id="p2Hud" class="hud-red">P2 (RED): DEFENDER</div>
     </div>
 
-    <!-- Canvas -->
     <canvas id="gameCanvas" width="1000" height="600"></canvas>
 
-    <!-- LEVEL 1 LASER TAG Intro Overlay Screen -->
+    <div id="transitionOverlay">LEVEL 2 ARENA:<br>SHIFTING MAZE</div>
+
     <div id="titleScreen" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0c16]/95 backdrop-blur-md px-8 text-center">
       <div class="inline-block px-3 py-1 mb-2 text-xs font-bold tracking-widest text-[#ffd700] uppercase border border-[#ffd700]/40 rounded-full bg-[#ffd700]/10">
         ARENA 1 / 3
@@ -94,9 +99,7 @@
         Breach the defense line to reach Door 1 before time runs out. The defender holds infinite ammo and grid lasers. Roles swap automatically mid-match!
       </p>
 
-      <!-- Player Controls Briefing Grid -->
       <div class="grid grid-cols-2 gap-4 max-w-xl w-full my-6 text-left text-xs">
-        <!-- Player 1 Card -->
         <div class="p-3 rounded-lg border border-[#00f3ff]/40 bg-[#00f3ff]/5">
           <div class="text-[#00f3ff] font-bold text-sm mb-1 flex items-center gap-1">
             <span class="w-2.5 h-2.5 rounded-full bg-[#00f3ff]"></span> P1 (CYAN)
@@ -107,7 +110,6 @@
           <p class="text-gray-300"><span class="text-white font-semibold">Manual Reload:</span> R</p>
         </div>
 
-        <!-- Player 2 Card -->
         <div class="p-3 rounded-lg border border-[#ff2a5f]/40 bg-[#ff2a5f]/5">
           <div class="text-[#ff2a5f] font-bold text-sm mb-1 flex items-center gap-1">
             <span class="w-2.5 h-2.5 rounded-full bg-[#ff2a5f]"></span> P2 (RED)
@@ -119,7 +121,6 @@
         </div>
       </div>
 
-      <!-- Start Button -->
       <button id="startBtn" class="btn-cyber px-8 py-3 rounded-md text-white font-bold tracking-widest text-sm uppercase cursor-pointer">
         Start Challenge ➔
       </button>
@@ -155,7 +156,6 @@
       KEYS[e.code] = false;
     });
 
-    // Sound Synthesizer via Web Audio API
     let audioCtx = null;
     function initAudio() {
       if (!audioCtx) {
@@ -210,19 +210,17 @@
       } catch(e) {}
     }
 
-    // Match States
     let gameStarted = false;
-    let currentPhase = 1; // 1 = Blue attacks / Red defends, 2 = Red attacks / Blue defends
+    let currentPhase = 1; 
     let phaseTimer = 60.0;
     let phase1Time = 60.0;
     let phase2Time = 60.0;
     let matchOver = false;
-    let swapBannerTimer = 0; // 3.5s transition banner
+    let swapBannerTimer = 0; 
+    let matchOverHandled = false;
 
-    // Door 1
     const door = { x: W - 45, y: H / 2 - 50, w: 25, h: 100 };
 
-    // Moving Pillars (Oscillating cover)
     const pillars = [
       { x: 220, y: 120, w: 24, h: 90, vy: 1.4, minY: 70, maxY: 230 },
       { x: 220, y: 390, w: 24, h: 90, vy: -1.4, minY: 320, maxY: 480 },
@@ -232,7 +230,6 @@
       { x: 740, y: 180, w: 22, h: 95, vy: 2.0, minY: 100, maxY: 420 }
     ];
 
-    // Corridor Lasers (Defensive Trap)
     const laserTraps = [
       { y: 160, h: 12, active: false },
       { y: 300, h: 12, active: false },
@@ -241,7 +238,6 @@
     let laserCooldown = 0;
     let laserActiveTime = 0;
 
-    // Pickups
     let pickups = [];
     function spawnPickups() {
       pickups = [
@@ -256,7 +252,6 @@
     }
     spawnPickups();
 
-    // Bullets & Sparks
     let bullets = [];
     let particles = [];
 
@@ -275,7 +270,6 @@
       }
     }
 
-    // Fighter Class
     class Fighter {
       constructor(id, color, isAttacker, startX, startY) {
         this.id = id;
@@ -296,16 +290,12 @@
         this.dead = false;
         this.respawnTimer = 0;
         this.coins = 0;
-
-        // Attacker specific
         this.mag = 6;
         this.reloading = false;
         this.reloadTimer = 0;
         this.shields = 3;
         this.shieldActive = false;
         this.frozenTimer = 0;
-
-        // Defender specific
         this.fireCooldown = 0;
       }
 
@@ -325,18 +315,16 @@
           this.frozenTimer -= dt;
         }
 
-        // Movement Vectors
         let mx = 0, my = 0;
         const isP1 = (this.id === 1);
 
         if (this.frozenTimer <= 0) {
           if (isP1) {
-            if (KEYS['KeyW'] || KEYS['w']) my -= 1;
-            if (KEYS['KeyS'] || KEYS['s']) my += 1;
-            if (KEYS['KeyA'] || KEYS['a']) mx -= 1;
-            if (KEYS['KeyD'] || KEYS['d']) mx += 1;
+            if (KEYS['w'] || KEYS['keyw']) my -= 1;
+            if (KEYS['s'] || KEYS['keys']) my += 1;
+            if (KEYS['a'] || KEYS['keya']) mx -= 1;
+            if (KEYS['d'] || KEYS['keyd']) mx += 1;
           } else {
-            // Player 2 (Red): Direct arrow controls without inversion
             if (KEYS['arrowup']) my -= 1;
             if (KEYS['arrowdown']) my += 1;
             if (KEYS['arrowleft']) mx -= 1;
@@ -352,7 +340,6 @@
           this.y += my * this.speed;
         }
 
-        // Shield Controls (Attacker only, usable even during 5s freeze)
         if (this.isAttacker) {
           const shieldKey = isP1 
             ? (KEYS['shiftleft'] || KEYS['e'] || KEYS['keye']) 
@@ -365,14 +352,12 @@
             this.shieldActive = false;
           }
 
-          // Manual Reload Trigger
           const reloadKey = isP1 ? (KEYS['r'] || KEYS['keyr']) : false;
           if (reloadKey && !this.reloading && this.mag < 6) {
             this.reloading = true;
             this.reloadTimer = 5.0;
           }
 
-          // Reload sequence
           if (this.reloading) {
             this.reloadTimer -= dt;
             if (this.reloadTimer <= 0) {
@@ -385,11 +370,9 @@
           if (this.fireCooldown > 0) this.fireCooldown -= dt;
         }
 
-        // Constrain within Arena walls
         this.x = Math.max(this.r + 5, Math.min(W - this.r - 5, this.x));
         this.y = Math.max(this.r + 52, Math.min(H - this.r - 8, this.y));
 
-        // Pillars dynamic collision resolution
         pillars.forEach(p => {
           const cx = Math.max(p.x, Math.min(this.x, p.x + p.w));
           const cy = Math.max(p.y, Math.min(this.y, p.y + p.h));
@@ -412,7 +395,7 @@
         if (this.isAttacker) {
           const shootKey = isP1 ? (KEYS['space'] || KEYS['f'] || KEYS['keyf']) : (KEYS['enter'] || KEYS['/'] || KEYS['slash']);
           if (shootKey && !this.reloading && this.mag > 0 && !this._lastShot) {
-            this.shoot(0); // STRICTLY HORIZONTAL RIGHT (+X)
+            this.shoot(0); 
             this.mag--;
             this._lastShot = true;
             if (this.mag === 0) {
@@ -424,7 +407,7 @@
         } else {
           const shootKey = isP1 ? (KEYS['space'] || KEYS['f'] || KEYS['keyf']) : (KEYS['enter'] || KEYS['/'] || KEYS['slash']);
           if (shootKey && this.fireCooldown <= 0) {
-            this.shoot(Math.PI); // STRICTLY HORIZONTAL LEFT (-X)
+            this.shoot(Math.PI); 
             this.fireCooldown = 0.32;
           }
         }
@@ -456,7 +439,7 @@
 
         if (this.hp <= 0) {
           this.dead = true;
-          this.respawnTimer = 3.0; // 3-second resurrect
+          this.respawnTimer = 3.0; 
           this.x = -999;
         }
       }
@@ -464,7 +447,6 @@
       draw() {
         if (this.dead) return;
 
-        // Body glow
         ctx.save();
         ctx.shadowBlur = 12;
         ctx.shadowColor = this.color;
@@ -473,14 +455,12 @@
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
         ctx.fill();
 
-        // Core
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r * 0.45, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
-        // Fixed Horizontal Gun Barrel
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 4;
         ctx.beginPath();
@@ -489,7 +469,6 @@
         ctx.lineTo(this.x + barrelDir * (this.r + 9), this.y);
         ctx.stroke();
 
-        // Active Shield Sphere
         if (this.shieldActive) {
           ctx.save();
           ctx.strokeStyle = '#00f3ff';
@@ -504,7 +483,6 @@
           ctx.restore();
         }
 
-        // Freeze Aura
         if (this.frozenTimer > 0) {
           ctx.save();
           ctx.strokeStyle = '#80e5ff';
@@ -516,7 +494,6 @@
           ctx.restore();
         }
 
-        // Overhead Ammo / Shield Info
         if (this.isAttacker) {
           ctx.fillStyle = '#fff';
           ctx.font = '10px monospace';
@@ -529,7 +506,6 @@
       }
     }
 
-    // Instantiate Players
     const p1 = new Fighter(1, '#00f3ff', true, 60, H / 2);
     const p2 = new Fighter(2, '#ff2a5f', false, W - 110, H / 2);
 
@@ -553,14 +529,12 @@
       spawnPickups();
     }
 
-    // Start Challenge Button handler
     startBtn.addEventListener('click', () => {
       initAudio();
       titleScreen.style.display = 'none';
       gameStarted = true;
     });
 
-    // Game Loop
     let lastTime = performance.now();
     function loop(now) {
       const dt = Math.min((now - lastTime) / 1000, 0.1);
@@ -575,15 +549,35 @@
     }
 
     function update(dt) {
-      if (matchOver) return;
+      if (matchOver) {
+        if (!matchOverHandled) {
+          matchOverHandled = true;
+          let winner = 0;
+          if (phase1Time < phase2Time) winner = 1;
+          else if (phase2Time < phase1Time) winner = 2;
 
-      // 3.5s Roles Swapped Intermission Banner
+          const urlParams = new URLSearchParams(window.location.search);
+          let p1Score = parseInt(urlParams.get('p1') || '0');
+          let p2Score = parseInt(urlParams.get('p2') || '0');
+
+          if(winner === 1) p1Score++;
+          if(winner === 2) p2Score++;
+
+          setTimeout(() => {
+            document.getElementById('transitionOverlay').style.display = 'flex';
+            setTimeout(() => {
+               window.location.href = `arena_2.html?p1=${p1Score}&p2=${p2Score}`;
+            }, 3000);
+          }, 3500);
+        }
+        return;
+      }
+
       if (swapBannerTimer > 0) {
         swapBannerTimer -= dt;
         return;
       }
 
-      // Round Timer
       phaseTimer -= dt;
       if (phaseTimer <= 0) {
         phaseTimer = 0;
@@ -598,7 +592,6 @@
         }
       }
 
-      // HUD Updates
       timerHud.textContent = `${phaseTimer.toFixed(1)}s`;
       if (phaseTimer <= 10) timerHud.classList.add('urgent');
       else timerHud.classList.remove('urgent');
@@ -611,13 +604,11 @@
         p2Hud.textContent = `P2 (RED): ATTACKER [AMMO: ${p2.mag} | SH: ${p2.shields}]`;
       }
 
-      // Update Moving Cover Pillars
       pillars.forEach(p => {
         p.y += p.vy;
         if (p.y <= p.minY || p.y >= p.maxY) p.vy *= -1;
       });
 
-      // Defender Laser Trap Controls (5s cooldown)
       const defenderPlayer = currentPhase === 1 ? p2 : p1;
       const isP1Defender = defenderPlayer.id === 1;
       const triggerLaser = isP1Defender 
@@ -627,8 +618,8 @@
       if (laserCooldown > 0) {
         laserCooldown -= dt;
       } else if (triggerLaser && !defenderPlayer.dead) {
-        laserActiveTime = 1.4; // 1.4s pulse duration
-        laserCooldown = 5.0;   // 5s cooldown
+        laserActiveTime = 1.4; 
+        laserCooldown = 5.0;   
         laserTraps.forEach(trap => trap.active = true);
         playSfx('laser');
       }
@@ -640,13 +631,11 @@
         }
       }
 
-      // Update Players
       p1.update(dt);
       p2.update(dt);
 
       const activeAttacker = currentPhase === 1 ? p1 : p2;
 
-      // Corridor Laser lethal hits on Attacker
       if (laserActiveTime > 0 && !activeAttacker.dead) {
         laserTraps.forEach(trap => {
           if (activeAttacker.y + activeAttacker.r > trap.y && activeAttacker.y - activeAttacker.r < trap.y + trap.h) {
@@ -657,13 +646,11 @@
         });
       }
 
-      // Bullets Update & Ricochet
       for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
         b.x += b.vx;
         b.y += b.vy;
 
-        // Boundary bounces
         let bounced = false;
         if (b.y <= 54 || b.y >= H - 6) {
           b.vy *= -1;
@@ -674,7 +661,6 @@
           bounced = true;
         }
 
-        // Dynamic pillar bounces
         pillars.forEach(p => {
           if (b.x > p.x && b.x < p.x + p.w && b.y > p.y && b.y < p.y + p.h) {
             b.vx *= -1;
@@ -691,7 +677,6 @@
           }
         }
 
-        // Hit opponent
         const target = b.owner === p1 ? p2 : p1;
         if (!target.dead && Math.hypot(b.x - target.x, b.y - target.y) < target.r + 4) {
           target.takeHit();
@@ -699,7 +684,6 @@
           continue;
         }
 
-        // Bullets trigger Pickups directly
         for (let pi = pickups.length - 1; pi >= 0; pi--) {
           const pick = pickups[pi];
           if (Math.hypot(b.x - pick.x, b.y - pick.y) < pick.r + 4) {
@@ -711,7 +695,6 @@
         }
       }
 
-      // Touch / Collect Pickups
       [p1, p2].forEach(player => {
         if (player.dead) return;
         for (let i = pickups.length - 1; i >= 0; i--) {
@@ -723,7 +706,6 @@
         }
       });
 
-      // Check Door Reached by Attacker
       if (!activeAttacker.dead) {
         if (activeAttacker.x + activeAttacker.r >= door.x &&
             activeAttacker.y >= door.y && activeAttacker.y <= door.y + door.h) {
@@ -738,7 +720,6 @@
         }
       }
 
-      // Particles decay
       for (let i = particles.length - 1; i >= 0; i--) {
         const pt = particles[i];
         pt.x += pt.vx;
@@ -757,14 +738,13 @@
         player.shields = Math.min(5, player.shields + 1);
       } else if (pick.type === 'freeze') {
         const activeAttacker = currentPhase === 1 ? p1 : p2;
-        activeAttacker.frozenTimer = 5.0; // Freeze attacker for 5 seconds
+        activeAttacker.frozenTimer = 5.0; 
       }
     }
 
     function render() {
       ctx.clearRect(0, 0, W, H);
 
-      // Cyber Grid Background
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
       ctx.lineWidth = 1;
       for (let x = 0; x < W; x += 40) {
@@ -774,7 +754,6 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       }
 
-      // Corridor Laser Trap Zones
       laserTraps.forEach(trap => {
         ctx.fillStyle = trap.active ? 'rgba(255, 42, 95, 0.45)' : 'rgba(255, 42, 95, 0.05)';
         ctx.fillRect(0, trap.y, W, trap.h);
@@ -788,7 +767,6 @@
         }
       });
 
-      // Door 1 (Objective Portal)
       ctx.save();
       ctx.shadowBlur = 20;
       ctx.shadowColor = '#00f3ff';
@@ -798,7 +776,6 @@
       ctx.fillRect(door.x + 4, door.y + 4, door.w - 8, door.h - 8);
       ctx.restore();
 
-      // Moving Cover Pillars
       ctx.fillStyle = '#1c2338';
       ctx.strokeStyle = '#3d4b73';
       ctx.lineWidth = 2;
@@ -807,7 +784,6 @@
         ctx.strokeRect(p.x, p.y, p.w, p.h);
       });
 
-      // Pickups
       pickups.forEach(p => {
         ctx.save();
         if (p.type === 'coin') {
@@ -847,7 +823,6 @@
         ctx.restore();
       });
 
-      // Bullets
       bullets.forEach(b => {
         ctx.save();
         ctx.shadowBlur = 8;
@@ -859,7 +834,6 @@
         ctx.restore();
       });
 
-      // Sparks
       particles.forEach(pt => {
         ctx.fillStyle = pt.color;
         ctx.globalAlpha = pt.life;
@@ -867,11 +841,9 @@
         ctx.globalAlpha = 1.0;
       });
 
-      // Players
       p1.draw();
       p2.draw();
 
-      // 3.5s Roles Swapped Transition Slide
       if (swapBannerTimer > 0) {
         ctx.fillStyle = 'rgba(6, 7, 12, 0.88)';
         ctx.fillRect(0, 48, W, H - 48);
@@ -892,7 +864,6 @@
         ctx.restore();
       }
 
-      // End of Match Victory Modal
       if (matchOver) {
         ctx.fillStyle = 'rgba(6, 7, 12, 0.94)';
         ctx.fillRect(0, 48, W, H - 48);
@@ -924,7 +895,7 @@
         ctx.fillText(`P1 Time: ${phase1Time.toFixed(1)}s   |   P2 Time: ${phase2Time.toFixed(1)}s`, W / 2, H / 2 + 15);
         ctx.font = '14px sans-serif';
         ctx.fillStyle = '#888';
-        ctx.fillText('Ready for Arena 2 design specs. Refresh to replay Arena 1.', W / 2, H / 2 + 65);
+        ctx.fillText('Calculating overall tournament standings...', W / 2, H / 2 + 65);
         ctx.restore();
       }
     }
